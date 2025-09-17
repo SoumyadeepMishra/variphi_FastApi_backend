@@ -1,3 +1,249 @@
+# from fastapi import APIRouter, Depends, HTTPException, status
+# from sqlalchemy.orm import Session
+# from typing import List
+# from datetime import timedelta
+
+# from app.database import get_db
+# from app.models.user import User as UserModel
+# from app.schemas.user import User, UserCreate, UserUpdate, Token
+# from app.services.user_service import UserService
+# from app.services.auth_service import AuthService
+
+# router = APIRouter(
+#     prefix="/users",
+#     tags=["users"]
+# )
+
+# # Dependency for injecting UserService
+# def get_user_service(db: Session = Depends(get_db)) -> UserService:
+#     return UserService(db)
+
+# # ---------------- Create User ----------------
+# @router.post("/", response_model=Token, status_code=status.HTTP_201_CREATED)
+# def create_user(
+#     user: UserCreate,
+#     user_service: UserService = Depends(get_user_service)
+# ):
+#     """Create a new user and return access token"""
+
+#     # Check if user with email already exists
+#     if user_service.get_user_by_email(user.email):
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Email already registered"
+#         )
+
+#     # Check if user with username already exists
+#     if user_service.get_user_by_username(user.username):
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Username already taken"
+#         )
+
+#     # Create user
+#     new_user = user_service.create_user(user)
+    
+#     # Generate JWT token using AuthService
+#     auth_service = AuthService(user_service.db)
+#     access_token_expires = timedelta(minutes=30)
+#     access_token = auth_service.create_access_token(
+#         data={"sub": new_user.username},
+#         expires_delta=access_token_expires
+#     )
+    
+#     return {"access_token": access_token, "token_type": "bearer"}
+
+
+# # ---------------- Get User by ID ----------------
+# @router.get("/{user_id}", response_model=User)
+# def get_user(
+#     user_id: int,
+#     user_service: UserService = Depends(get_user_service)
+# ):
+#     """Get user by ID"""
+#     user = user_service.get_user(user_id)
+#     if not user:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="User not found"
+#         )
+#     return user
+
+
+# # ---------------- Get All Users ----------------
+# @router.get("/", response_model=List[User])
+# def get_all_users(
+#     skip: int = 0,
+#     limit: int = 100,
+#     user_service: UserService = Depends(get_user_service)
+# ):
+#     """Get all users with pagination"""
+#     return user_service.get_users(skip=skip, limit=limit)
+
+
+# # ---------------- Update User ----------------
+# @router.put("/{user_id}", response_model=User)
+# def update_user(
+#     user_id: int,
+#     user_update: UserUpdate,
+#     user_service: UserService = Depends(get_user_service)
+# ):
+#     """Update user"""
+#     updated_user = user_service.update_user(user_id, user_update)
+#     if not updated_user:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="User not found"
+#         )
+#     return updated_user
+
+
+# # ---------------- Delete User ----------------
+# @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+# def delete_user(
+#     user_id: int,
+#     user_service: UserService = Depends(get_user_service)
+# ):
+#     """Delete user"""
+#     success = user_service.delete_user(user_id)
+#     if not success:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="User not found"
+#         )
+
+# from fastapi import APIRouter, Depends, HTTPException, status
+# from sqlalchemy.orm import Session
+# from typing import List
+# from datetime import timedelta
+
+# from app.database import get_db
+# from app.models.user import User as UserModel
+# from app.schemas.user import User, UserCreate, UserUpdate, Token
+# from app.services.user_service import UserService
+# from app.services.auth_service import AuthService
+# from app.core.auth import get_current_user
+# from app.core.roles import role_required  # 👈 role-based dependency
+
+# router = APIRouter(
+#     prefix="/users",
+#     tags=["users"]
+# )
+
+# # Dependency for injecting UserService
+# def get_user_service(db: Session = Depends(get_db)) -> UserService:
+#     return UserService(db)
+
+
+# # ---------------- Create User ----------------
+# @router.post("/", response_model=Token, status_code=status.HTTP_201_CREATED)
+# def create_user(
+#     user: UserCreate,
+#     user_service: UserService = Depends(get_user_service)
+# ):
+#     """Create a new user and return access token"""
+
+#     # Check if user with email already exists
+#     if user_service.get_user_by_email(user.email):
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Email already registered"
+#         )
+
+#     # Check if user with username already exists
+#     if user_service.get_user_by_username(user.username):
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Username already taken"
+#         )
+
+#     # Create user
+#     new_user = user_service.create_user(user)
+    
+#     # Generate JWT token using AuthService
+#     auth_service = AuthService(user_service.db)
+#     access_token_expires = timedelta(minutes=30)
+#     access_token = auth_service.create_access_token(
+#         new_user,  # 👈 pass user object directly
+#         expires_delta=access_token_expires
+#     )
+    
+#     return {"access_token": access_token, "token_type": "bearer"}
+
+
+# # ---------------- Get User by ID ----------------
+# @router.get("/{user_id}", response_model=User)
+# def get_user(
+#     user_id: int,
+#     user_service: UserService = Depends(get_user_service),
+#     current_user: UserModel = Depends(get_current_user)
+# ):
+#     """Get user by ID (self or admin)"""
+#     user = user_service.get_user(user_id)
+#     if not user:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="User not found"
+#         )
+
+#     # Only allow if same user OR admin
+#     if current_user.role != "admin" and current_user.id != user_id:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Not authorized"
+#         )
+#     return user
+
+
+# # ---------------- Get All Users ----------------
+# @router.get("/", response_model=List[User], dependencies=[Depends(role_required("admin"))])
+# def get_all_users(
+#     skip: int = 0,
+#     limit: int = 100,
+#     user_service: UserService = Depends(get_user_service)
+# ):
+#     """Get all users with pagination (admin-only)"""
+#     return user_service.get_users(skip=skip, limit=limit)
+
+
+# # ---------------- Update User ----------------
+# @router.put("/{user_id}", response_model=User)
+# def update_user(
+#     user_id: int,
+#     user_update: UserUpdate,
+#     user_service: UserService = Depends(get_user_service),
+#     current_user: UserModel = Depends(get_current_user)
+# ):
+#     """Update user (self or admin)"""
+#     if current_user.role != "admin" and current_user.id != user_id:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Not authorized to update this user"
+#         )
+
+#     updated_user = user_service.update_user(user_id, user_update)
+#     if not updated_user:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="User not found"
+#         )
+#     return updated_user
+
+
+# # ---------------- Delete User ----------------
+# @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(role_required("admin"))])
+# def delete_user(
+#     user_id: int,
+#     user_service: UserService = Depends(get_user_service)
+# ):
+#     """Delete user (admin-only)"""
+#     success = user_service.delete_user(user_id)
+#     if not success:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="User not found"
+#         )
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
@@ -8,6 +254,8 @@ from app.models.user import User as UserModel
 from app.schemas.user import User, UserCreate, UserUpdate, Token
 from app.services.user_service import UserService
 from app.services.auth_service import AuthService
+from app.core.auth import get_current_user
+from app.core.roles import role_required  # ✅ role-based dependency (list supported)
 
 router = APIRouter(
     prefix="/users",
@@ -17,6 +265,7 @@ router = APIRouter(
 # Dependency for injecting UserService
 def get_user_service(db: Session = Depends(get_db)) -> UserService:
     return UserService(db)
+
 
 # ---------------- Create User ----------------
 @router.post("/", response_model=Token, status_code=status.HTTP_201_CREATED)
@@ -47,7 +296,7 @@ def create_user(
     auth_service = AuthService(user_service.db)
     access_token_expires = timedelta(minutes=30)
     access_token = auth_service.create_access_token(
-        data={"sub": new_user.username},
+        new_user,  # 👈 pass user object directly
         expires_delta=access_token_expires
     )
     
@@ -58,26 +307,34 @@ def create_user(
 @router.get("/{user_id}", response_model=User)
 def get_user(
     user_id: int,
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
+    current_user: UserModel = Depends(get_current_user)
 ):
-    """Get user by ID"""
+    """Get user by ID (self or admin)"""
     user = user_service.get_user(user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
+
+    # ✅ Allow if same user OR admin in roles
+    if "admin" not in current_user.roles and current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized"
+        )
     return user
 
 
 # ---------------- Get All Users ----------------
-@router.get("/", response_model=List[User])
+@router.get("/", response_model=List[User], dependencies=[Depends(role_required("admin"))])
 def get_all_users(
     skip: int = 0,
     limit: int = 100,
     user_service: UserService = Depends(get_user_service)
 ):
-    """Get all users with pagination"""
+    """Get all users with pagination (admin-only)"""
     return user_service.get_users(skip=skip, limit=limit)
 
 
@@ -86,9 +343,17 @@ def get_all_users(
 def update_user(
     user_id: int,
     user_update: UserUpdate,
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
+    current_user: UserModel = Depends(get_current_user)
 ):
-    """Update user"""
+    """Update user (self or admin)"""
+    # ✅ Check against roles list
+    if "admin" not in current_user.roles and current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to update this user"
+        )
+
     updated_user = user_service.update_user(user_id, user_update)
     if not updated_user:
         raise HTTPException(
@@ -99,12 +364,12 @@ def update_user(
 
 
 # ---------------- Delete User ----------------
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(role_required("admin"))])
 def delete_user(
     user_id: int,
     user_service: UserService = Depends(get_user_service)
 ):
-    """Delete user"""
+    """Delete user (admin-only)"""
     success = user_service.delete_user(user_id)
     if not success:
         raise HTTPException(
